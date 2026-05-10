@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Vector indexes (built artifacts, large)
+chroma_db/
+chroma_chunks/
+bm25_index/
+
+# Eval artifacts (built by run.py)
+eval/results.json
+eval/results-*.json
+eval/benchmark.json
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
