@@ -1,0 +1,5 @@
+{"id": "Q01", "category": "fact", "question": "What is [a concept on one of your pages]?", "gold": ["03-research/wiki/concepts-llms/example-concept.md"]}
+{"id": "Q02", "category": "fact", "question": "Who is [a person from your entities folder]?", "gold": ["03-research/wiki/entities/example-person.md"]}
+{"id": "Q03", "category": "cross-domain", "question": "How does [concept A] relate to [concept B]?", "gold": ["03-research/wiki/concepts-llms/concept-a.md", "03-research/wiki/concepts-llms/concept-b.md"]}
+{"id": "Q04", "category": "staleness", "question": "What is the most recent [thing] documented in this vault?", "gold": ["03-research/wiki/sources-llms/recent-paper.md"]}
+{"id": "Q05", "category": "synthesis", "question": "How does [your overall approach to X] compare to [approach Y]?", "gold": ["03-research/wiki/synthesis/example-synthesis.md"]}
