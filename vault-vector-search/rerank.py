@@ -29,7 +29,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import chromadb
-from sentence_transformers import CrossEncoder
 
 from config import (
     CHROMA_DIR,
@@ -53,13 +52,19 @@ class RerankHit:
     excerpt: str
 
 
-_CE_CACHE: CrossEncoder | None = None
+# Lazy state: we don't import sentence_transformers at module load time so
+# that callers running with RERANK_FAN=0 never pay the ~1 GB torch + transformers
+# import cost. The CrossEncoder is loaded on first non-zero-fan call only.
+_CE_CACHE = None
 _PREAMBLE_DOC_CACHE: dict[str, str] | None = None
 
 
-def _load_ce() -> CrossEncoder:
+def _load_ce():
+    """Lazily import sentence-transformers and load the cross-encoder.
+    Only ever called when RERANK_FAN > 0."""
     global _CE_CACHE
     if _CE_CACHE is None:
+        from sentence_transformers import CrossEncoder  # heavy import — deferred
         _CE_CACHE = CrossEncoder(RERANKER_MODEL, max_length=512)
     return _CE_CACHE
 
@@ -83,6 +88,24 @@ def hybrid_rerank_search(
     top_k: int = DEFAULT_TOP_K,
     fan: int = DEFAULT_FAN,
 ) -> list[RerankHit]:
+    # Disable-rerank short-circuit. When fan <= 0, return hybrid results in
+    # RerankHit shape — no cross-encoder load, no torch import, no model cost.
+    # Lets RERANK_FAN=0 in config.py serve as a one-knob disable for the entire
+    # rerank stage and its ~1 GB dependency.
+    if fan <= 0:
+        hits = hybrid_search(query, top_k=top_k)
+        return [
+            RerankHit(
+                rel_path=h.rel_path,
+                title=h.title,
+                rerank_score=h.score,        # hybrid score in lieu of rerank score
+                hybrid_rank=i + 1,
+                hybrid_score=h.score,
+                excerpt=h.excerpt,
+            )
+            for i, h in enumerate(hits)
+        ]
+
     candidates = hybrid_search(query, top_k=fan)
     if not candidates:
         return []
