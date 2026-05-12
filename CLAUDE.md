@@ -107,6 +107,18 @@ The default wiki layout splits by domain at `03-research/wiki/concepts-{kb,llms,
 
 Re-run `tools/audit_preambles.py` and `tools/lint_vault.py` after restructuring to catch broken wikilinks and missing preambles.
 
+## Whole-vault vector-search fallback — when to stop walking the folder tree
+
+The folder-tree-plus-domain-split policy above stays the default. It breaks down for queries that legitimately span the entire vault — for example, "which of the methods I have read about could plausibly help with X?" or "do any of my course notes contradict this finding?". Once the vault crosses ~1000 total pages, walking even a well-pruned folder tree to answer those queries becomes prohibitively expensive: the index router itself becomes the bottleneck.
+
+At that scale, route cross-cutting queries through whole-vault hybrid retrieval over the same Chroma + BM25 indexes that the per-branch retrievers already use. This is a different default mode on the same `search_wiki` endpoint, not a separate retrieval system — no code change required, just a mode flip.
+
+A useful side-effect of the fallback: the folder tree never mixes domains, but the embedding space has no such partition. A query mentioning "neurons" can pull both a neuroscience source and a deep-learning page, because the representations share enough structure to land near each other. Two knobs decide which way that goes:
+- **Retrieval threshold** — raise it to suppress weak cross-domain hits, lower it to invite them.
+- **Indexed scope** (`ALLOW_PREFIXES`, `DENY_FILES` in `vault-vector-search/config.py`) — narrow to a single domain for strict in-domain search, widen across related domains for deliberate cross-domain mixing.
+
+Both knobs are tunable per query, so a single session can shift between "find everything in this project on X" and "surface anything from anywhere on X" without re-shaping the underlying vault.
+
 ## Model selection (suggestion)
 
 - Ingest / summarize / index updates → smaller / faster model (Claude Haiku or equivalent)
